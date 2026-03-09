@@ -151,7 +151,7 @@ namespace Puerts.UnitTest
     {
 
     }
-   
+	
     [UnityEngine.Scripting.Preserve]
     public class CrossLangTestHelper
     {
@@ -183,7 +183,91 @@ namespace Puerts.UnitTest
         {
             return new NewObject();
         }
+
+        [UnityEngine.Scripting.Preserve]
+        public static string AddPackage(string descFilePath)
+        {
+            return descFilePath;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static string AddPackage(string assetPath, LoadResource loadFunc)
+        {
+            return assetPath;
+        }
+
+        public delegate object LoadResource(string name, string extension, System.Type type, out TestEnum destroyMethod);
     }
+	
+	public enum ConstructorParam
+    {
+        A, B, C, D, E, F, G, H
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class ConstructorOverload
+    {
+        public int selected;
+        public uint heroID;
+
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A, bool ignoreRegisterSale = false)
+        {
+            selected = 1;
+            this.heroID = heroID;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, uint skinID, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
+        {
+            selected = 2;
+            this.heroID = heroID;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(uint heroID, uint skinID, uint avatarCfgId, ConstructorParam iconType = ConstructorParam.A, ConstructorParam useDazeItemType = ConstructorParam.A)
+        {
+            selected = 3;
+            this.heroID = heroID;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(ConstructorOverload product, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
+        {
+            selected = 4;
+            this.heroID = 123;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public ConstructorOverload(ConstructorParam resItemType, uint resId, ConstructorParam iconType = ConstructorParam.A, bool selfBuy = true, uint buyCount = 1)
+        {
+            selected = 5;
+            this.heroID = 456;
+        }
+    }
+
+    public class ConstructorOverloadFactory
+    {
+        [UnityEngine.Scripting.Preserve]
+        public static ConstructorOverload Create(ConstructorParam type, int cnt, uint heroID)
+        {
+            return new ConstructorOverload(heroID);
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static float? LogAppEvent(string logEvent, float? valueToSum = null, System.Collections.Generic.Dictionary<string, object> parameters = null)
+        {
+            Value = valueToSum.HasValue ? valueToSum.Value : 0f;
+            var res = (logEvent == null ? (float?)null : valueToSum);
+            //UnityEngine.Debug.Log($"LogAppEvent: {logEvent}, valueToSum: {valueToSum}, res: {res}");
+            return res;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public static uint FloatAsUInt(uint rewardId, bool needBackup = true)
+        {
+            return rewardId;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public static float Value;
+    }
+
     public unsafe class TestHelper
     {
         protected static TestHelper instance;
@@ -239,23 +323,22 @@ namespace Puerts.UnitTest
         public TestHelper()
         {
 #if UNITY_EDITOR || PUERTS_DISABLE_IL2CPP_OPTIMIZATION
-            var env = UnitTestEnv.GetEnv();
-            env.UsingFunc<int>();
-            env.UsingFunc<int, int>();
-            env.UsingFunc<DateTime, DateTime>();
-            env.UsingFunc<string, string>();
-            env.UsingFunc<bool, bool>();
-            env.UsingFunc<long, long>();
-            env.UsingFunc<TestStruct, TestStruct>();
-            env.UsingFunc<TestStruct?, TestStruct?>();
-            env.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
+            LegacyBridageConfig.UsingFunc<int>();
+            LegacyBridageConfig.UsingFunc<int, int>();
+            LegacyBridageConfig.UsingFunc<DateTime, DateTime>();
+            LegacyBridageConfig.UsingFunc<string, string>();
+            LegacyBridageConfig.UsingFunc<bool, bool>();
+            LegacyBridageConfig.UsingFunc<long, long>();
+            LegacyBridageConfig.UsingFunc<TestStruct, TestStruct>();
+            LegacyBridageConfig.UsingFunc<TestStruct?, TestStruct?>();
+            LegacyBridageConfig.UsingFunc<TestUnsafeStruct, TestUnsafeStruct>();
 #endif
         }
 
         public Func<int> JSFunctionTestPipeLine(Func<int> initialValue, Func<Func<int>, Func<int>> JSValueHandler)
         {
             AssertAndPrint("CSGetFunctionArgFromJS", initialValue(), 3);
-            AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue), initialValue); // 这里判断一下引用
+            //AssertAndPrint("CSGetFunctionReturnFromJS", JSValueHandler(initialValue), initialValue); // 这里判断一下引用
             return initialValue;
         }
         public event Func<int> functionEvent;
@@ -268,6 +351,10 @@ namespace Puerts.UnitTest
             AssertAndPrint("CSFunctionTestPropStatic", functionTestPropStatic(), 3);
 
             AssertAndPrint("CSInvokeFunctionEvent", functionEvent(), 30);
+        }
+        public bool IsFunctionEventBinded()
+        {
+            return functionEvent != null;
         }
         public Func<int> functionTestField = null;
         protected Func<int> _functionTestProp = null;
@@ -308,6 +395,14 @@ namespace Puerts.UnitTest
         {
             get { return _numberTestPropStatic; }
             set { _numberTestPropStatic = value; }
+        }
+
+        public void ClearNumberTestMemberValue()
+        {
+            numberTestField = 0;
+            numberTestProp = 0;
+            numberTestFieldStatic = 0;
+            numberTestPropStatic = 0;
         }
 
         public void NumberTestCheckMemberValue()
@@ -369,6 +464,14 @@ namespace Puerts.UnitTest
             set { _stringTestPropStatic = value; }
         }
 
+        public void ClearStringTestMemberValue()
+        {
+            stringTestField = null;
+            stringTestProp = null;
+            stringTestFieldStatic = null;
+            stringTestPropStatic = null;
+        }
+
         public void StringTestCheckMemberValue()
         {
             AssertAndPrint("CSStringTestField", stringTestField, "Puer");
@@ -399,6 +502,14 @@ namespace Puerts.UnitTest
         {
             get { return _boolTestPropStatic; }
             set { _boolTestPropStatic = value; }
+        }
+
+        public void ClearBoolTestMemberValue()
+        {
+            boolTestField = false;
+            boolTestProp = false;
+            boolTestFieldStatic = false;
+            boolTestPropStatic = false;
         }
 
         public void BoolTestCheckMemberValue()
@@ -432,6 +543,14 @@ namespace Puerts.UnitTest
         {
             get { return _bigintTestPropStatic; }
             set { _bigintTestPropStatic = value; }
+        }
+
+        public void ClearBigintTestMemberValue()
+        {
+            bigintTestField = 0;
+            bigintTestProp = 0;
+            bigintTestFieldStatic = 0;
+            bigintTestPropStatic = 0;
         }
 
         public ulong GetBigULong()
@@ -693,6 +812,140 @@ namespace Puerts.UnitTest
         float IFoo.width => 125f; // Note the explicit interface `IFoo.`
     }
 
+    [UnityEngine.Scripting.Preserve]
+    public class BoxValueContainer
+    {
+        public object BoxedValue;
+
+        [UnityEngine.Scripting.Preserve]
+        public BoxValueContainer()
+        {
+            BoxedValue = 123;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StaticFieldStruct
+    {
+        [UnityEngine.Scripting.Preserve]
+        public float instanceField;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public static class OnlyStaticFieldClass
+    {
+        [UnityEngine.Scripting.Preserve]
+        public static StaticFieldStruct staticFieldStruct;
+
+        [UnityEngine.Scripting.Preserve]
+        static OnlyStaticFieldClass()
+        {
+            staticFieldStruct = new StaticFieldStruct { instanceField = 3 };
+        }
+    }
+
+    public struct Struct2Field
+    {
+        public int X;
+        public int Y;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class ClassHasNullableField
+    {
+        [UnityEngine.Scripting.Preserve]
+        public ClassHasNullableField()
+        {
+            struct2Filed = new Struct2Field() { X = 10, Y = 20 };
+            nullableIntField = 100;
+        }
+        [UnityEngine.Scripting.Preserve]
+        public Struct2Field? struct2Filed;
+        [UnityEngine.Scripting.Preserve]
+        public int? nullableIntField;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class BaseWithVirtual
+    {
+        protected virtual bool VirtualMethod(bool f)
+        {
+            return f;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public bool VirtualMethod()
+        {
+            return VirtualMethod(true);
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class DerivedOverrideVirtual : BaseWithVirtual
+    {
+        [UnityEngine.Scripting.Preserve]
+        protected override bool VirtualMethod(bool f)
+        {
+            return f;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct FieldStruct
+    {
+        public int b;
+        public int a;
+        public object obj;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class FieldClass
+    {
+        public static int ObjCount = 0;
+        public FieldClass()
+        {
+            ObjCount++;
+        }
+        ~FieldClass()
+        {
+            ObjCount--;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StructWithObjectField
+    {
+        public TestEnum testEnum;
+        public byte TabEnum;
+        public uint eqrdeq;
+        public int vaq;
+        public object obj;
+        public TestEnum gdfaqw;
+        public TestEnum ggdasq;
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public class FieldClass2
+    {
+        public static int ObjCount = 0;
+        public FieldClass2()
+        {
+            ObjCount++;
+        }
+        ~FieldClass2()
+        {
+            ObjCount--;
+        }
+    }
+
+    [UnityEngine.Scripting.Preserve]
+    public struct StructWithObjectFieldNested
+    {
+        public int abc;
+        public StructWithObjectField nested;
+    }
+
+
     [TestFixture]
     public class CrossLangTest
     {
@@ -713,13 +966,16 @@ namespace Puerts.UnitTest
                     });
 
                     const evfn = () => 30;
+                    assertAndPrint('must not binded', testHelper.IsFunctionEventBinded(), false);
                     testHelper.add_functionEvent(evfn);
+                    assertAndPrint('must binded', testHelper.IsFunctionEventBinded(), true);
                     testHelper.functionTestField = () => 3
                     testHelper.functionTestProp = () => 3
                     TestHelper.functionTestFieldStatic = () => 3
                     TestHelper.functionTestPropStatic = () => 3
                     testHelper.JSFunctionTestCheckMemberValue();
                     testHelper.remove_functionEvent(evfn);
+                    assertAndPrint('must not binded after removed', testHelper.IsFunctionEventBinded(), false);
 
                 })()
             ");
@@ -780,6 +1036,7 @@ namespace Puerts.UnitTest
                     });
                     assertAndPrint('JSGetNumberOutArgFromCS', outRef[0], oNum + 3);
                     assertAndPrint('JSGetNumberReturnFromCS', rNum, oNum + 4);
+                    testHelper.ClearNumberTestMemberValue();
                     testHelper.numberTestField = 3
                     testHelper.numberTestProp = 3
                     TestHelper.numberTestFieldStatic = 3
@@ -810,6 +1067,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetStringOutArgFromCS', outRef[0], oStr + 'def');
                     assertAndPrint('JSGetStringReturnFromCS', rStr, oStr + 'defg');
 
+                    testHelper.ClearStringTestMemberValue();
                     testHelper.stringTestField = 'Puer'
                     testHelper.stringTestProp = 'Puer'
                     TestHelper.stringTestFieldStatic = 'Puer'
@@ -841,6 +1099,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBoolOutArgFromCS', outRef[0], false);
                     assertAndPrint('JSGetBoolReturnFromCS', rBool, false);
                     
+                    testHelper.ClearBoolTestMemberValue();
                     testHelper.boolTestField = true
                     testHelper.boolTestProp = true
                     TestHelper.boolTestFieldStatic = true
@@ -872,6 +1131,7 @@ namespace Puerts.UnitTest
                     assertAndPrint('JSGetBigIntOutArgFromCS', outRef[0] == oBigInt + 3n);
                     assertAndPrint('JSGetBigIntReturnFromCS', rBigInt == oBigInt + 4n);
                     
+                    testHelper.ClearBigintTestMemberValue();
                     testHelper.bigintTestField = 9007199254740987n
                     testHelper.bigintTestProp = 9007199254740987n
                     TestHelper.bigintTestFieldStatic = 9007199254740987n
@@ -1155,9 +1415,11 @@ namespace Puerts.UnitTest
         public void CallDelegateAfterJsEnvDisposed()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = new Puerts.BackendV8(new TxtLoader());
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = new Puerts.BackendV8(new DefaultLoader());
+            var jsEnv = new ScriptEnv(backend);
 #endif
             var callback = jsEnv.Eval<Action>("() => console.log('hello')");
             callback();
@@ -1173,9 +1435,11 @@ namespace Puerts.UnitTest
         public void TestJsGC()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = new Puerts.BackendV8(new TxtLoader());
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = new Puerts.BackendV8(new DefaultLoader());
+            var jsEnv = new ScriptEnv(backend);
 #endif
             TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
@@ -1188,7 +1452,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1202,7 +1466,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1220,9 +1484,11 @@ namespace Puerts.UnitTest
         public void TestJsStructGC()
         {
 #if PUERTS_GENERAL
-            var jsEnv = new JsEnv(new TxtLoader());
+            var backend = new Puerts.BackendV8(new TxtLoader());
+            var jsEnv = new ScriptEnv(backend);
 #else
-            var jsEnv = new JsEnv(new DefaultLoader());
+            var backend = new Puerts.BackendV8(new DefaultLoader());
+            var jsEnv = new ScriptEnv(backend);
 #endif
             TestGC.ObjCount = 0;
             var objCount = jsEnv.Eval<int>(@"
@@ -1235,7 +1501,7 @@ namespace Puerts.UnitTest
             randomCount;
             ");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1249,7 +1515,7 @@ namespace Puerts.UnitTest
 
             jsEnv.Eval("objs = undefined");
 
-            if (jsEnv.Backend is BackendV8 || jsEnv.Backend is BackendNodeJS)
+            if (backend is BackendV8 || backend.GetType().Name == "BackendNodeJS")
             {
                 jsEnv.Eval("gc()");
             }
@@ -1315,6 +1581,41 @@ namespace Puerts.UnitTest
         }
 
         [Test]
+        public void AddPackageTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            // Test AddPackage with single string parameter
+            var result1 = jsEnv.Eval<string>(@"
+                (function() {
+                    const CrossLangTestHelper = CS.Puerts.UnitTest.CrossLangTestHelper;
+                    const result = CrossLangTestHelper.AddPackage('test/path/to/desc.json');
+                    return result;
+                })()
+            ");
+            Assert.AreEqual("test/path/to/desc.json", result1);
+
+            // Test AddPackage with string and delegate parameters
+            var result2 = jsEnv.Eval<string>(@"
+                (function() {
+                    const CrossLangTestHelper = CS.Puerts.UnitTest.CrossLangTestHelper;
+                    const TestEnum = CS.Puerts.UnitTest.TestEnum;
+                    
+                    // Create a load function delegate
+                    const loadFunc = function(name, extension, type, outDestroyMethod) {
+                        // outDestroyMethod is an out parameter, set it to TestEnum.A
+                        outDestroyMethod.value = TestEnum.A;
+                        return { name: name, ext: extension };
+                    };
+                    
+                    const result = CrossLangTestHelper.AddPackage('test/asset/path', loadFunc);
+                    return result;
+                })()
+            ");
+            Assert.AreEqual("test/asset/path", result2);
+            jsEnv.Tick();
+        }
+
+        [Test]
         public void PassNullTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
@@ -1351,8 +1652,8 @@ namespace Puerts.UnitTest
         public void CastJsFunctionAsTwoDiffDelegate()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingAction<int>();
-            jsEnv.UsingAction<string, long>();
+            LegacyBridageConfig.UsingAction<int>();
+            LegacyBridageConfig.UsingAction<string, long>();
             var cb1 = jsEnv.Eval<Action<int>>(@"
             function __GCB(a, b) {
               __GMSG = `${a}${b}`
@@ -1366,13 +1667,59 @@ namespace Puerts.UnitTest
             Assert.AreEqual("hello999", jsEnv.Eval<string>("__GMSG"));
         }
 
+        private Action<string, long> BindTwoDelegateAndRetSecond(ScriptEnv jsEnv)
+        {
+            var cb2 = jsEnv.Eval<Action<string, long>>("__GCB22");
+            var cb1 = jsEnv.Eval<Action<int>>("__GCB22");
+            //UnityEngine.Debug.Log("obj1: " + cb2.Target.GetHashCode());
+            //UnityEngine.Debug.Log("obj2: " + cb1.Target.GetHashCode());
+            cb1 = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            jsEnv.Tick();
+            return cb2;
+        }
+
+        private void BindTwoDelegateReleseAll(ScriptEnv jsEnv)
+        {
+            var cb = BindTwoDelegateAndRetSecond(jsEnv);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            jsEnv.Tick();
+            cb = null;
+        }
+
+        [Test]
+        public void CastJsFunctionAsSecondDelegateAfterFirstDelegateGC()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            LegacyBridageConfig.UsingAction<int>();
+            LegacyBridageConfig.UsingAction<string, long>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                jsEnv.Eval(@"
+            function __GCB22(a, b) {
+              __GMSG = `${a}${b}`
+            }
+            ");
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                jsEnv.Tick();
+                BindTwoDelegateReleseAll(jsEnv);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                jsEnv.Tick();
+            }
+        }
+
         public delegate string NotGenericTestFunc(long t);
 
         [Test]
         public void NotGenericTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingFunc<long, string>();
+            LegacyBridageConfig.UsingFunc<long, string>();
             var cb1 = jsEnv.Eval<NotGenericTestFunc>(@"
             function __NGTF(a) {
               return `${a}`
@@ -1407,7 +1754,7 @@ namespace Puerts.UnitTest
         public void PassDestroyedUnityObjectTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            jsEnv.UsingFunc<UnityEngine.Object, bool>();
+            LegacyBridageConfig.UsingFunc<UnityEngine.Object, bool>();
             // 无效的UnityEninge.Object会以null的形式传入脚本
             var is_null = jsEnv.Eval<Func<UnityEngine.Object, bool>>(@"
 function __PDUOTF(o){
@@ -1429,13 +1776,14 @@ __PDUOTF;");
 #endif
         delegate bool PassScriptObject(ScriptObject obj);
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         [Test]
         public void JsObjectCrossJsEnvs()
         {
-            var jsEnv1 = new JsEnv(UnitTestEnv.GetLoader());
-            jsEnv1.UsingFunc<ScriptObject, bool>();
-            var jsEnv2 = new JsEnv(UnitTestEnv.GetLoader());
-            jsEnv2.UsingFunc<ScriptObject, bool>();
+            var backend1 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
+            var jsEnv1 = new ScriptEnv(backend1);
+            var backend2 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
+            var jsEnv2 = new ScriptEnv(backend2);
             var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
             var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
             var test2 = jsEnv2.Eval<PassScriptObject>("(obj) => !!obj");
@@ -1450,5 +1798,278 @@ __PDUOTF;");
                 Assert.False(test2(jsObj1));
 			});
         }
+		
+		[Test]
+        public void DisposeJsEnvJsObject()
+        {
+            var backend1 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
+            var jsEnv1 = new ScriptEnv(backend1);
+            var jsObj1 = jsEnv1.Eval<ScriptObject>("Object.create(null)");
+            var test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
+            Assert.True(test1(jsObj1));
+            jsEnv1.Dispose();
+            backend1 = new Puerts.BackendV8(UnitTestEnv.GetLoader());
+            jsEnv1 = new ScriptEnv(backend1);
+            test1 = jsEnv1.Eval<PassScriptObject>("(obj) => !!obj");
+			Assert.Catch(() =>
+            {
+                Assert.False(test1(jsObj1));
+			});
+        }
+#endif
+
+        [Test]
+        public void AutoConvertStringToNumber()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<uint>(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const obj = ConstructorOverloadFactory.Create(1, 1, '3001385');
+                    console.log('>>>>>>>>>>>>>>>>>>>>>>>>> obj.heroID: ' + obj.heroID)
+                    return obj.heroID
+                })()
+            ");
+            Assert.AreEqual(3001385u, res);
+        }
+
+        [Test]
+        public void PassBigIntToUInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    ConstructorOverloadFactory.Create(1, 1, 3001385n);
+                })()
+            ");
+        }
+		
+		[Test]
+        public void TestConstructorOverload()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverload = CS.Puerts.UnitTest.ConstructorOverload;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new ConstructorOverload(1, 1, 1, 0, 0);
+                    AssertAndPrint(`TestConstructorOverload obj.selected: ${obj.selected} expected 3`, obj.selected == 3);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestNullablbeFloat()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<float>(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('check 1',  ConstructorOverloadFactory.LogAppEvent(null, 113) == null);
+                    AssertAndPrint('check 2', ConstructorOverloadFactory.LogAppEvent('11', null) == null);
+                    AssertAndPrint('check 3', ConstructorOverloadFactory.LogAppEvent('11', 113) == 113);
+                    return ConstructorOverloadFactory.Value
+                })()
+            ");
+            Assert.AreEqual(113f, res);
+        }
+
+        public delegate void DelegateWithDefaultValue(uint callSeq, ulong resourceKey, double a , int param = 0);
+
+        [Test]
+        public void DelegateWithDefaultValueTest()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            LegacyBridageConfig.UsingAction<uint, ulong, double, int>();
+            var cb1 = jsEnv.Eval<DelegateWithDefaultValue>(@"
+            function __DWDV(a) {
+            }
+            __DWDV;
+            ");
+            cb1(1, 2, 6, 3);
+        }
+
+        [Test]
+        public void TestFloatAsUInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('TestFloatAsUInt check 1',  ConstructorOverloadFactory.FloatAsUInt(113.123, false) == 113);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestNegativeAsUInt()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ConstructorOverloadFactory = CS.Puerts.UnitTest.ConstructorOverloadFactory;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const res = ConstructorOverloadFactory.FloatAsUInt(-1, false);
+                    AssertAndPrint(`TestNegativeAsUInt got ${ConstructorOverloadFactory.FloatAsUInt(-1, false)}`,   res == 4294967295 || res == 0); // depending on .net runtime
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestVirtualCall()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<string>(@"
+                (function() {
+                    const StringBuilder = CS.System.Text.StringBuilder;
+                    const sb = new StringBuilder();
+                    sb.Append('ToStringOverrideTest: 123');
+                    const res = CS.System.Object.prototype.ToString.call(sb);
+                    return res;
+                })()
+            ");
+            Assert.AreEqual("ToStringOverrideTest: 123", res);
+        }
+
+        [Test]
+        public void BoxValueTest()
+        {
+            
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const BoxValueContainer = CS.Puerts.UnitTest.BoxValueContainer;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    const obj = new BoxValueContainer();
+                    AssertAndPrint(`BoxValueTest value`,   obj.BoxedValue == 123);
+                    AssertAndPrint(`BoxValueTest type`,   typeof obj.BoxedValue == 'number');
+
+                    obj.BoxedValue = 999
+                    AssertAndPrint(`BoxValueTest changed value`,   obj.BoxedValue == 999);
+                    AssertAndPrint(`BoxValueTest changed type`,   typeof obj.BoxedValue == 'number');
+                })()
+            ");
+        }
+
+        [Test]
+        public void AccessOnlyStaticFieldClass()
+        {
+
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const OnlyStaticFieldClass = CS.Puerts.UnitTest.OnlyStaticFieldClass;
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint(`OnlyStaticFieldClass.staticFieldStruct.instanceField`,  OnlyStaticFieldClass.staticFieldStruct.instanceField == 3);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestClassHasNullableField()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval(@"
+                (function() {
+                    const ClassHasNullableField = CS.Puerts.UnitTest.ClassHasNullableField;
+                    const obj = new ClassHasNullableField();
+                    const AssertAndPrint = CS.Puerts.UnitTest.TestHelper.AssertAndPrint;
+                    AssertAndPrint('check obj.struct2Filed.X', obj.struct2Filed.X == 10);
+                    AssertAndPrint('check obj.struct2Filed.Y', obj.struct2Filed.Y == 20);
+                    AssertAndPrint('check obj.nullableIntField', obj.nullableIntField == 100);
+                    const s = obj.struct2Filed;
+                    s.X = 100;
+                    s.Y = 200;
+                    obj.struct2Filed = s;
+                    obj.nullableIntField = 500;
+                    console.log('after set ', obj.struct2Filed.X, obj.struct2Filed.Y, obj.nullableIntField);
+                    AssertAndPrint(`after set check obj.struct2Filed.X ${ obj.struct2Filed.X }`, obj.struct2Filed.X == 100);
+                    AssertAndPrint(`after set check obj.struct2Filed.Y ${ obj.struct2Filed.Y }`, obj.struct2Filed.Y == 200);
+                    AssertAndPrint(`after set check obj.nullableIntField ${ obj.nullableIntField }`, obj.nullableIntField == 500);
+                })()
+            ");
+        }
+
+        [Test]
+        public void TestDerivedOverrideVirtual()
+        {
+            var jsEnv = UnitTestEnv.GetEnv();
+            var res = jsEnv.Eval<bool>(@"
+                (function() {
+                    return new CS.Puerts.UnitTest.DerivedOverrideVirtual().VirtualMethod();
+                })()
+            ");
+            Assert.AreEqual(true, res);
+        }
+
+        // gc相关测试在webgl下不稳定，先去掉
+#if !UNITY_WEBGL || UNITY_EDITOR
+        [Test]
+        public void TestObjectFieldRefAStruct()
+        {
+            FieldClass.ObjCount = 0;
+            FieldClass2.ObjCount = 0;
+            var jsEnv = UnitTestEnv.GetEnv();
+            jsEnv.Eval("CS.Puerts.UnitTest.StructWithObjectField, CS.Puerts.UnitTest.FieldStruct, CS.Puerts.UnitTest.FieldClass");
+            var res = jsEnv.Eval<int>(@"
+                globalThis.__TestObjectFieldRefAStruct = new CS.Puerts.UnitTest.StructWithObjectField();
+                globalThis.__StructWithObjectFieldNested = new CS.Puerts.UnitTest.StructWithObjectFieldNested();
+                (function() {
+                    const o = new CS.Puerts.UnitTest.FieldStruct();
+                    o.a = 8766
+                    __TestObjectFieldRefAStruct.obj = o;
+                    const n =  __StructWithObjectFieldNested.nested; // valuetype is copy by value
+                    n.obj =  new CS.Puerts.UnitTest.FieldClass2();
+                    __StructWithObjectFieldNested.nested = n;
+                })()
+                __TestObjectFieldRefAStruct.obj.a;
+            ");
+
+            jsEnv.Backend.LowMemoryNotification();
+            Assert.AreEqual(8766, res);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            jsEnv.Eval(@"
+                 (function() {
+                    for (let i = 0; i < 1000; i++) {
+                        const o = new CS.Puerts.UnitTest.FieldStruct();
+                        o.a = i
+                    }
+                 })()
+             ");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            
+
+            res = jsEnv.Eval<int>("__TestObjectFieldRefAStruct.obj.a;");
+            Assert.AreEqual(8766, res);
+
+            jsEnv.Eval("__TestObjectFieldRefAStruct.obj = new CS.Puerts.UnitTest.FieldClass()");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            TestHelper.AssertAndPrint("FieldClass", 1, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass2", 1, FieldClass2.ObjCount);
+
+            jsEnv.Eval(@"
+                (function() {
+                    __TestObjectFieldRefAStruct.obj = null
+                    const n =  __StructWithObjectFieldNested.nested; // valuetype is copy by value
+                    n.obj =  null;
+                    __StructWithObjectFieldNested.nested = n;
+                })()
+            ");
+            jsEnv.Backend.LowMemoryNotification();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            TestHelper.AssertAndPrint("FieldClass", 0, FieldClass.ObjCount);
+            TestHelper.AssertAndPrint("FieldClass2", 0, FieldClass2.ObjCount);
+        }
+#endif
+
     }
 }

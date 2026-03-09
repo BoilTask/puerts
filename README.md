@@ -2,27 +2,106 @@
 
 [![license](https://img.shields.io/badge/license-BSD_3_Clause-blue.svg)](https://github.com/Tencent/puerts/blob/master/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/Tencent/puerts/pulls)
-
-[![unreal](https://img.shields.io/badge/unreal-v1.0.8-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.8)
-
-[![unity](https://img.shields.io/badge/unity(stable)-v2.2.2-blue.svg)](doc/unity/zhcn/install.md)
 ![Unity_Test](https://github.com/Tencent/puerts/workflows/unity%20unittest/badge.svg)
+
+## Unreal Releases
+
+[![unreal](https://img.shields.io/badge/unreal-v1.0.9-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unreal_v1.0.9)
+
+## Unity Releases
+
+[![unity](https://img.shields.io/badge/unity-v3.0.1(latest)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v3.0.1)
+[![unity](https://img.shields.io/badge/unity-v2.2.3(lts)-blue.svg)](https://github.com/Tencent/puerts/releases/tag/Unity_v2.2.3)
+
+## Nuget Releases
+
+[![Puerts.V8.Complete](https://img.shields.io/nuget/v/Puerts.V8.Complete.svg?label=Puerts.V8)](https://www.nuget.org/packages/Puerts.V8.Complete)
+[![Puerts.NodeJS.Complete](https://img.shields.io/nuget/v/Puerts.NodeJS.Complete.svg?label=Puerts.NodeJS)](https://www.nuget.org/packages/Puerts.NodeJS.Complete)
+[![Puerts.QuickJS.Complete](https://img.shields.io/nuget/v/Puerts.QuickJS.Complete.svg?label=Puerts.QuickJS)](https://www.nuget.org/packages/Puerts.QuickJS.Complete)
+[![Puerts.Lua.Complete](https://img.shields.io/nuget/v/Puerts.Lua.Complete.svg?label=Puerts.Lua)](https://www.nuget.org/packages/Puerts.Lua.Complete)
+[![Puerts.Python.Complete](https://img.shields.io/nuget/v/Puerts.Python.Complete.svg?label=Puerts.Python)](https://www.nuget.org/packages/Puerts.Python.Complete)
 
 [跳转中文](#what---普洱ts是什么)
 
-## WHAT is PuerTS (PUER Typescript)?
+## WHAT is PuerTS?
  
-`PuerTS` is a TypeScript programming solution in Unity/Unreal/DotNet.
-* provides a JavaScript Runtime.
-* allows TypeScript to access the host engine with the help of TypeScript declarations generation.
+`PuerTS` is a **multi-language scripting solution** for Unity/Unreal/DotNet.
+
+* 🌐 **Multi-Language Support (Unity 3.0 New!)**: JavaScript/TypeScript, **Lua**, and **Python** — use the language your team is most productive in, or even mix them in one project. *(Unreal currently supports JavaScript/TypeScript only.)*
+* 🚀 Provides high-performance script runtimes with seamless C#/C++ interop.
+* 📝 TypeScript declaration generation for type-safe access to host engine APIs.
 
 ## WHY should I use PuerTS?
 
-* Facilitates game-building processes by combining JavaScript/Node.js ecosystem and professional game engines
-* In contrast to Lua script, TypeScript supports static type checking, which significantly improves code robustness and maintainability.
-* High efficiency: supports reflection call throughout the host - no extra steps needed for interop with C++/C#.
-* High performance: supports static wrapper generation - handles complex scenes with high-performance demands.
-* Talented WebGL Support: massive advantage in performance and dev efficiency compared to Lua, even faster than pure C# in some cases.
+* **Choose your language (Unity)**: PuerTS 3.0 introduces a unified `ScriptEnv` architecture — write game logic in TypeScript, Lua, or Python with a consistent C# bridging API. No more one-size-fits-all.
+* **Massive ecosystem access**: leverage npm, LuaRocks, or PyPI packages alongside professional game engines to accelerate development.
+* **Type safety when you want it**: TypeScript's static type checking significantly improves code robustness, while Lua and Python offer rapid prototyping flexibility.
+* **High efficiency**: full-engine, cross-platform reflection calls — zero boilerplate for C++/C# interop.
+* **High performance**: static wrapper generation for performance-critical paths, across all supported languages.
+* **Talented WebGL Support**: massive advantage in performance and dev efficiency, even faster than pure C# in some cases.
+
+## Quick Start (Unity)
+
+All three languages share the same `ScriptEnv` API — just swap the `Backend`:
+
+**JavaScript / TypeScript**
+
+```csharp
+using Puerts;
+using UnityEngine;
+
+void Start() {
+    var env = new ScriptEnv(new BackendV8());
+    env.Eval(@"
+        const Vector3 = CS.UnityEngine.Vector3;
+        const Debug = CS.UnityEngine.Debug;
+        let pos = new Vector3(1, 2, 3);
+        Debug.Log('Hello from JS! pos = ' + pos);
+    ");
+    env.Dispose();
+}
+```
+
+**Lua**
+
+```csharp
+using Puerts;
+using UnityEngine;
+
+void Start() {
+    var env = new ScriptEnv(new BackendLua());
+    env.Eval(@"
+        local CS = require('csharp')
+        local Vector3 = CS.UnityEngine.Vector3
+        local Debug = CS.UnityEngine.Debug
+        local pos = Vector3(1, 2, 3)
+        Debug.Log('Hello from Lua! pos = ' .. pos:ToString())
+    ");
+    env.Dispose();
+}
+```
+
+**Python**
+
+```csharp
+using Puerts;
+using UnityEngine;
+
+void Start() {
+    var env = new ScriptEnv(new BackendPython());
+    env.Eval(@"
+exec('''
+import UnityEngine.Vector3 as Vector3
+import UnityEngine.Debug as Debug
+pos = Vector3(1.0, 2.0, 3.0)
+Debug.Log('Hello from Python! pos = ' + pos.ToString())
+''')
+");
+    env.Dispose();
+}
+```
+
+> 💡 Three languages, one API surface. Each example creates a `Vector3`, then calls `Debug.Log` — real C# interop in just a few lines.
 
 ## HOW can I start to use PuerTS
 [Documentation](https://puerts.github.io/en)
@@ -52,9 +131,11 @@
 
 ---
 
-## Select Script Engine
+## Select Script Backend
 
-Currently puerts supports three script engines: v8, quickjs, nodejs, choose the one that suits you.
+PuerTS supports multiple script backends. For **JavaScript/TypeScript**, choose from V8, QuickJS, or Node.js. PuerTS 3.0 also adds **Lua** and **Python** as first-class backends.
+
+### JavaScript Backends
 
 * V8 (default): Generally excellent performance, moderate code size, only includes the implementation of the ECMAScript specification, does not include Node.js API or browser API.
 
@@ -62,12 +143,20 @@ Currently puerts supports three script engines: v8, quickjs, nodejs, choose the 
 
 * Node.js: Supports Node.js API (OpenSSL-related APIs are not supported on Unreal Engine's mobile platform), but has a larger code size.
 
-
-| Script Engine | Node api | Performance | Code Size | Debugging | Notes |
+| JS Backend | Node API | Performance | Code Size | Debugging | Notes |
 | --- | --- | --- | --- | --- | --- |
 | V8 | ❌ | `*****` | `***` | ✔️ | |
 | QuickJS | ❌ | `**` | `*` | ❌ | |
 | Node.js | ✔️ | `*****` | `*****` | ✔️ | OpenSSL may be disabled |
+
+### Additional Language Backends (Unity 3.0 New!)
+
+> **Note**: Lua and Python backends are currently available for **Unity only**. Unreal Engine still supports JavaScript/TypeScript exclusively.
+
+| Backend | Language | Performance | Platform Support | Notes |
+| --- | --- | --- | --- | --- |
+| Lua | Lua 5.4 | `*****` | All platforms | Ideal for teams already using Lua |
+| Python | CPython | `***` | Desktop only | Great for AI/ML integration & tooling |
 
 ## Avaliable on these Engine
 
@@ -79,12 +168,20 @@ Currently puerts supports three script engines: v8, quickjs, nodejs, choose the 
 
 ## Available on these Platform
 
-* iOS
-* Android
-* OpenHarmony
-* Windows
-* Macos
+PuerTS's core code supports all platforms supported by the game engines, but each script backend has its own platform requirements:
 
+|  | Windows | Mac | Linux | Android | iOS | H5/Mini Games |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8 | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Nodejs | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Quickjs | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Webgl | ❌ | ❌ | ❌ | ❌ | ❌ | ✔️ |
+| Lua | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Python | ✔️ | ✔️ | ✔️ | ❌ | ❌ | ❌ |
+
+Note 1: Only V8, Nodejs, and Quickjs backends are available for Unreal. Unity supports all backends listed above.
+Note 2: Although the Webgl backend only supports H5/Mini Games, its scripts run in the native JS VM of the web environment, which typically delivers higher performance (e.g., JIT support in iOS Mini Games). It also provides first-class language benefits such as convenient debugging and profiling.
+Note 3: For JavaScript, different platforms can use different JS backends — e.g., V8 for mobile apps and Webgl for H5 — achieving full platform coverage with optimal performance.
 
 ## Ask for help
 
@@ -93,19 +190,84 @@ Currently puerts supports three script engines: v8, quickjs, nodejs, choose the 
 ------
 
 ## WHAT - 普洱TS是什么?
-PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
+PuerTS 是 Unity/Unreal/Dotnet 下的**多语言脚本编程解决方案**。
 
-* 提供了一个JavaScript运行时
-* 提供TypeScript声明文件生成能力，易于通过TypeScript访问宿主引擎，
+* 🌐 **多语言支持（Unity 3.0 新特性！）**：JavaScript/TypeScript、**Lua**、**Python** 三大语言开箱即用——团队擅长什么就用什么，同一个项目里甚至可以混用。*（Unreal 目前仅支持 JavaScript/TypeScript。）*
+* 🚀 提供高性能脚本运行时，与 C#/C++ 无缝互操作。
+* 📝 提供 TypeScript 声明文件生成能力，类型安全地访问宿主引擎 API。
 
 
 ## WHY - 为什么我该用普洱TS?
 
-* JavaScript生态有众多的库和工具链，结合专业商业引擎的渲染能力，快速打造游戏
-* 相比游戏领域常用的lua脚本，TypeScript的静态类型检查有助于编写更健壮，可维护性更好的程序
-* 高效：全引擎，全平台支持反射调用，无需额外步骤即可与宿主C++/C#通信。
-* 高性能：全引擎，全平台支持生成静态调用桥梁，兼顾了高性能的场景。
-* WebGL平台下的天生优势：相比Lua脚本在WebGL版本的表现，PuerTS在性能和效率上都有极大提升，目前极限情况甚至比C#更快。
+* **自由选择语言（Unity）**：PuerTS 3.0 引入了统一的 `ScriptEnv` 架构——用 TypeScript、Lua 或 Python 编写游戏逻辑，享受一致的 C# 桥接 API，不再被某一种脚本语言绑定。
+* **海量生态随手可用**：npm、LuaRocks、PyPI 的海量包 + 专业游戏引擎的渲染能力，加速开发效率。
+* **按需选择类型安全**：TypeScript 的静态类型检查显著提升代码健壮性；Lua 和 Python 则提供快速原型验证的灵活性。
+* **高效**：全引擎，全平台支持反射调用，无需额外步骤即可与宿主 C++/C# 通信。
+* **高性能**：全引擎，全平台支持生成静态调用桥梁，所有支持的语言都兼顾了高性能场景。
+* **WebGL 平台天生优势**：相比其他脚本方案，PuerTS 在 WebGL 平台性能和效率上都有极大提升，极限情况甚至比纯 C# 更快。
+
+## 快速上手（Unity）
+
+三种语言共享同一套 `ScriptEnv` API，只需切换 `Backend`：
+
+**JavaScript / TypeScript**
+
+```csharp
+using Puerts;
+using UnityEngine;
+
+void Start() {
+    var env = new ScriptEnv(new BackendV8());
+    env.Eval(@"
+        const Vector3 = CS.UnityEngine.Vector3;
+        const Debug = CS.UnityEngine.Debug;
+        let pos = new Vector3(1, 2, 3);
+        Debug.Log('Hello from JS! pos = ' + pos);
+    ");
+    env.Dispose();
+}
+```
+
+**Lua**
+
+```csharp
+using Puerts;
+using UnityEngine;
+
+void Start() {
+    var env = new ScriptEnv(new BackendLua());
+    env.Eval(@"
+        local CS = require('csharp')
+        local Vector3 = CS.UnityEngine.Vector3
+        local Debug = CS.UnityEngine.Debug
+        local pos = Vector3(1, 2, 3)
+        Debug.Log('Hello from Lua! pos = ' .. pos:ToString())
+    ");
+    env.Dispose();
+}
+```
+
+**Python**
+
+```csharp
+using Puerts;
+using UnityEngine;
+
+void Start() {
+    var env = new ScriptEnv(new BackendPython());
+    env.Eval(@"
+exec('''
+import UnityEngine.Vector3 as Vector3
+import UnityEngine.Debug as Debug
+pos = Vector3(1.0, 2.0, 3.0)
+Debug.Log('Hello from Python! pos = ' + pos.ToString())
+''')
+");
+    env.Dispose();
+}
+```
+
+> 💡 三种语言，同一套 API。每个示例都创建了一个 `Vector3`，然后调用 `Debug.Log` ——短短几行代码即可实现真正的 C# 互操作。
 
 ## HOW - 我该怎么开始
 
@@ -137,21 +299,32 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 ---
 
-## 脚本引擎选择
+## 脚本后端选择
 
-目前puerts支持三种脚本引擎：v8、quickjs、nodejs，选择合适你的那个。
+PuerTS 支持多种脚本后端。**JavaScript/TypeScript** 可选 V8、QuickJS、Node.js；3.0 新增 **Lua** 和 **Python** 作为一等公民后端。
 
-* v8（默认）：综合比较优秀，高性能，代码体积适中，仅包含ecmascript规范的实现，不包含nodejs api、浏览器 api
+### JavaScript 后端
 
-* quickjs： 性能不如v8，不支持调试，但代码体积小，适用于代码段大小敏感型业务
+* V8（默认）：综合比较优秀，高性能，代码体积适中，仅包含 ECMAScript 规范的实现，不包含 Node.js API、浏览器 API。
 
-* nodejs：支持nodejs api（unreal engine的移动平台下不支持openssl相关api），代码体积较大
+* QuickJS：性能不如 V8，不支持调试，但代码体积小，适用于包体大小敏感的场景。
 
-| 脚本引擎 | Node api | 性能 | 代码体积 | 调试 | 补充 |
+* Node.js：支持 Node.js API（Unreal Engine 移动平台下不支持 OpenSSL 相关 API），代码体积较大。
+
+| JS 后端 | Node API | 性能 | 代码体积 | 调试 | 补充 |
 | --- | --- | --- | --- | --- | --- |
 | V8 | ❌ | `*****` | `***` | ✔️ | |
 | QuickJS | ❌ | `**` | `*` | ❌ | |
 | Node.js | ✔️ | `*****` | `*****` | ✔️ | OpenSSL 可能被禁用 |
+
+### 新增语言后端（Unity 3.0 新特性！）
+
+> **注意**：Lua 和 Python 后端目前**仅在 Unity 版本**中可用，Unreal Engine 仍仅支持 JavaScript/TypeScript。
+
+| 后端 | 语言 | 性能 | 平台支持 | 补充 |
+| --- | --- | --- | --- | --- |
+| Lua | Lua 5.4 | `*****` | 全平台 | 适合已有 Lua 技术栈的团队 |
+| Python | CPython | `***` | 桌面平台 | 适合 AI/ML 集成与工具链开发 |
 
 ## 可用引擎
 
@@ -163,12 +336,20 @@ PuerTS是 Unity/Unreal/Dotnet 下的TypeScript编程解决方案
 
 ## 可用平台
 
-* iOS
-* Android
-* 鸿蒙（OpenHarmony）
-* Windows
-* Macos
+PuerTS的核心代码支持游戏引擎支持的所有平台，但每个脚本后端有其特有的平台要求：
 
+|  | Window | Mac | Linux | Android | IOS | H5/小游戏|
+| --- | --- | --- | --- | --- | --- |--- |
+| V8 | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Nodejs  | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+| Quickjs  | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Webgl  | ❌ | ❌ | ❌ | ❌ | ❌  | ✔️ |
+| Lua   | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| Python  | ✔️ | ✔️ | ✔️ | ❌ | ❌ | ❌ |
+
+注1： Unreal下只有V8、Nodejs、Quickjs三种后端，Unity支持以上所有脚本后端
+注2： Webgl后端虽然只支持H5/小游戏，但它的脚本是运行在web环境的原生js虚拟机里，通常性能更高（比如在ios小游戏环境里支持jit），也能享受first class语言诸如方便调试，profiler等好处
+注3： 对于js，不同平台可以选不同的js脚本后端，比如app选v8，H5平台选Webgl实现全平台支持且性能最优
 
 ## 技术支持
 

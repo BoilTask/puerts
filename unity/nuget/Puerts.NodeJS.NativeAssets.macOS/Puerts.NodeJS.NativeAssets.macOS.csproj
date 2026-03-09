@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <PackageVersion>$(PuertsNodeJSVersion)</PackageVersion>
-    <TargetFramework>$(PuertsNativeAssetsmacOSTargetFramework)</TargetFramework>
+    <TargetFrameworks>$(PuertsNativeAssetsmacOSTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
-  <Import Project="..\NativeAssets.Common.props" />
+  <Import Project="..\NoAssemblyOutputs.Common.props" />
 
   <ItemGroup>
     <None Include="lib\**\*.dylib" Pack="True" PackagePath="runtimes\" />

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageVersion>$(PuertsPythonVersion)</PackageVersion>
+        <TargetFrameworks>$(PuertsNativeAssetsmacOSTargetFrameworks)</TargetFrameworks>
+    </PropertyGroup>
+
+    <Import Project="..\NoAssemblyOutputs.Common.props" />
+
+    <ItemGroup>
+        <None Include="lib\**\*.*" Pack="True" PackagePath="runtimes\" />
+    </ItemGroup>
+
+</Project>

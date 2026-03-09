@@ -56,6 +56,9 @@ namespace Puerts.UnitTest
             }
         }
 
+        // Unity对应没引用的字段也可能剪裁
+        // 不加这个在unity2022 webgl默认设置下lua用例会报"no static field v"，js由于没有这检查不会报错
+        [UnityEngine.Scripting.Preserve]
         public static T v;
     }
 
@@ -86,18 +89,15 @@ namespace Puerts.UnitTest
         public void ListRangeTest()
         {
             var jsEnv = UnitTestEnv.GetEnv();
-            Assert.Catch(() =>
-            {
-                jsEnv.Eval(@"
-                    (function() {
-                        let List = puerts.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
-                        let ls = new List();
-                        ls.Add(1);
-                        ls.Add(2);
-                        let res = CS.Puerts.UnitTest.GenericTestHelper.testListRange(ls,2);
-                    })()
-                ");
-            });
+            jsEnv.Eval(@"
+                (function() {
+                    let List = puerts.$generic(CS.System.Collections.Generic.List$1, CS.System.Int32);
+                    let ls = new List();
+                    ls.Add(1);
+                    ls.Add(2);
+                    let res = CS.Puerts.UnitTest.GenericTestHelper.TestListRange(ls,1);
+                })()
+            ");
             jsEnv.Tick();
         }
 

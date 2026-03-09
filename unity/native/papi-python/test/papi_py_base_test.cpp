@@ -171,7 +171,7 @@ static void CtorCountSetterWrap(struct pesapi_ffi* apis, pesapi_callback_info in
 static void GetSelfWrap(struct pesapi_ffi* apis, pesapi_callback_info info)
 {
     auto env = apis->get_env(info);
-    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);;
+    auto obj = (TestStruct*) apis->get_native_holder_ptr(info);
     apis->add_return(info, apis->native_object_to_value(env, &g_dummy_type_id , obj, false));
 }
 
@@ -250,7 +250,16 @@ public:
     static void TearDownTestCase()
     {
         printf("TearDownTestCase\n");
-        Py_Finalize();
+        // 确保当前线程状态是主解释器的线程状态
+        PyThreadState* mainThreadState = PyInterpreterState_ThreadHead(PyInterpreterState_Main());
+        if (mainThreadState) {
+            PyThreadState_Swap(mainThreadState);
+        }
+        // 使用 Py_FinalizeEx 而不是 Py_Finalize，它会返回错误码而不是直接崩溃
+        int result = Py_FinalizeEx();
+        if (result != 0) {
+            printf("Warning: Py_FinalizeEx returned error code: %d\n", result);
+        }
     }
 
     static void Foo(struct pesapi_ffi* apis, pesapi_callback_info info)
@@ -418,7 +427,7 @@ TEST_F(PApiBaseTest, EvalJavaScriptEx)
 
     EXPECT_STREQ("abc", apis->get_exception_as_string(scope, false));
     EXPECT_STREQ(
-        "Traceback (most recent call last):\n  File \"<string>\", line 3, in <module>\n  File \"test.py\", line 1, in <module>\n  "
+        "Traceback (most recent call last):\n  File \"test.py\", line 1, in <module>\n  "
         "File \"test.py\", line 1, in <lambda>\n  File \"test.py\", line 1, in <genexpr>\nException: abc\n",
         apis->get_exception_as_string(scope, true));
 }
@@ -582,8 +591,8 @@ TEST_F(PApiBaseTest, VariableAccess)
     auto env = apis->get_env_from_ref(env_ref);
 
     auto code = R"((lambda TestStruct: (
-        TestStruct.get_ctor_count(),
-        TestStruct.set_ctor_count(999)
+        TestStruct.ctor_count,
+        setattr(TestStruct, "ctor_count", 999),
     ))(loadClass('TestStruct'))[0])";
     TestStruct::ctor_count = 100;
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
@@ -621,15 +630,21 @@ auto code = R"(
 
 TEST_F(PApiBaseTest, MutiObject)
 {
+    TestStruct::ctor_count = 0;
+    TestStruct::dtor_count = 0;
     auto env = apis->get_env_from_ref(env_ref);
-
-    auto code = R"((lambda: [(TestStruct := loadClass('TestStruct')),[ (obj := TestStruct(123), self_obj := obj.GetSelf()) for i in range(1000) ]])())";
+    auto code = R"((lambda: (TestStruct := loadClass('TestStruct'), [TestStruct(123).GetSelf() for i in range(1000)], None)[-1])())";
+    auto scopeInner = apis->open_scope(env_ref);
     auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
-    if (apis->has_caught(scope))
+    apis->close_scope(scopeInner);
+    EXPECT_EQ(1000, TestStruct::ctor_count);
+    EXPECT_EQ(1000, TestStruct::dtor_count);
+    
+    if (apis->has_caught(scopeInner))
     {
-        printf("%s\n", apis->get_exception_as_string(scope, true));
+        printf("%s\n", apis->get_exception_as_string(scopeInner, true));
     }
-    ASSERT_FALSE(apis->has_caught(scope));
+    ASSERT_FALSE(apis->has_caught(scopeInner));
 }
 
 TEST_F(PApiBaseTest, RefArgument)
@@ -746,12 +761,19 @@ TEST_F(PApiBaseTest, ObjectPrivate)
     EXPECT_EQ(&t, p);
     // pycode
     auto code = R"(lambda: print("Hello from func"))";
-    auto ret = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
+    auto func = apis->eval(env, (const uint8_t*) (code), strlen(code), "test.py");
     ASSERT_FALSE(apis->has_caught(scope));
-    ASSERT_TRUE(apis->is_function(env, ret));
-    // EXPECT_EQ(true, apis->set_private(env, ret, &t));
-    // EXPECT_EQ(true, apis->get_private(env, ret, &p));
+    ASSERT_TRUE(apis->is_function(env, func));
+    
+    EXPECT_EQ(false, apis->get_private(env, func, &p));
+    EXPECT_EQ(nullptr, p);
+    EXPECT_EQ(true, apis->set_private(env, func, &t));
+    EXPECT_EQ(true, apis->get_private(env, func, &p));
     EXPECT_EQ(&t, p);
+
+    EXPECT_EQ(true, apis->set_private(env, func, nullptr));
+    EXPECT_EQ(true, apis->get_private(env, func, &p));
+    EXPECT_EQ(nullptr, p);
 }
 
 TEST_F(PApiBaseTest, CallMethodDirectly)

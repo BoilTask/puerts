@@ -19,7 +19,9 @@ public class PuerCfg {
                 typeof(Puerts.UnitTest.ExtensionTestHelperDerived),
                 typeof(Puerts.UnitTest.ExtensionTestHelper1),
                 typeof(Puerts.UnitTest.ExtensionTestHelperDerived1),
-                typeof(Puerts.UnitTest.DelegateTestClass)
+                typeof(Puerts.UnitTest.DelegateTestClass),
+                typeof(System.Diagnostics.Debug),
+                typeof(Puerts.UnitTest.CrossLangTestHelper.LoadResource)
             };
         }
     }

@@ -2,8 +2,9 @@ import { cp, exec, mkdir, rm } from "@puerts/shell-util";
 import assert from "assert";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import glob from "glob";
-import { basename, extname, join, relative } from "path";
+import { basename, extname, join, relative, dirname } from "path";
 import runPuertsMake from "./make.mjs";
+import { execFileSync, spawnSync } from "child_process";
 
 ////////////// dotnet-test
 function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
@@ -18,10 +19,50 @@ function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
     
     const linkPuerTS = `
     <ItemGroup>
-        ${glob.sync(join(dir, '../../Assets/core/upm/**/*.cs').replace(/\\/g, '/'))
+        ${glob.sync(join(dir, '../../upms/core/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, '../../Assets/core/upm/'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../../upms/core/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/v8/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/v8/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/lua/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/lua/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/python/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/python/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/nodejs/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/nodejs/'), pathname).replace(/\//, '\\')}</Link>
+        </Compile>`
+            ).join('\n')}
+    </ItemGroup>
+	<ItemGroup>
+        ${glob.sync(join(dir, '../../upms/quickjs/**/*.cs').replace(/\\/g, '/'))
+            .map(pathname =>
+`    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
+            <Link>${relative(join(dir, '../../upms/quickjs/'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')}
     </ItemGroup>
@@ -29,10 +70,10 @@ function collectCSFilesAndMakeCompileConfig(dir, workdir, excludeGenerator) {
     
     const linkPuerTSCommonJS = `
     <ItemGroup>
-        ${glob.sync(join(dir, '../../Assets/commonjs/upm/Runtime/**/*.cs').replace(/\\/g, '/'))
+        ${glob.sync(join(dir, '../../upms/commonjs/Runtime/**/*.cs').replace(/\\/g, '/'))
             .map(pathname =>
 `    <Compile Include="${relative(workdir, pathname).replace(/\//, '\\')}">
-            <Link>${relative(join(dir, '../../Assets/commonjs/upm/Runtime/'), pathname).replace(/\//, '\\')}</Link>
+            <Link>${relative(join(dir, '../../upms/commonjs/Runtime/'), pathname).replace(/\//, '\\')}</Link>
         </Compile>`
             ).join('\n')}
     </ItemGroup>
@@ -366,7 +407,14 @@ export async function unityTest(cwd, unityPath) {
         arch: process.arch
     });
 
-    await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
+    await runPuertsMake(join(cwd, '../../native/papi-python'), {
+        platform: platform,
+        config: "Debug",
+        websocket: 1,
+        arch: process.arch
+    });
+	
+	await runPuertsMake(join(cwd, '../../native/wsppaddon'), {
         platform: platform,
         config: "Debug",
         websocket: 1,
